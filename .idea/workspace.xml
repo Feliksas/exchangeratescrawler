@@ -1,7 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="6a3006e5-d69f-47f5-8419-ef7955f1ef83" name="Default Changelist" comment="" />
+    <list default="true" id="6a3006e5-d69f-47f5-8419-ef7955f1ef83" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/logfile.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/logfile.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/currencystorage/CurrencyStorageClientConfiguration.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/currencystorage/CurrencyStorageClientConfiguration.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/currencystorage/CurrencyStorageService.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/currencystorage/CurrencyStorageService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/exchangerates/ExchangeRatesService.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/exchangerates/ExchangeRatesService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/exchangerates/Main.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/exchangerates/Main.class" afterDir="false" />
+    </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -98,7 +106,7 @@
       <workItem from="1568101144019" duration="2383000" />
       <workItem from="1568104137185" duration="10899000" />
       <workItem from="1568148736747" duration="3148000" />
-      <workItem from="1568187152661" duration="46000" />
+      <workItem from="1568187152661" duration="463000" />
     </task>
     <servers />
   </component>
