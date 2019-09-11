@@ -30,13 +30,20 @@ public class CurrencyStorageService {
     private Connection connection;
 
     private static final Logger LOG = LogManager.getLogger(CurrencyStorageService.class);
+
+    private static final String CURRENCY = "currency";
+    private static final String SPOT = "spot";
+    private static final String DATE = "date";
+
     private static final String TABLE_NAME = "exchange_rates";
     private static final String CONFIG_FILE_NAME = "mysql.properties";
     private static final String TABLE_INIT_QUERY = "CREATE TABLE IF NOT EXISTS %s" +
         "(currency VARCHAR(3) NOT NULL," +
-        "spot DECIMAL(10,2)," +
+        "spot DECIMAL(20,5) NOT NULL," +
         "date DATETIME NOT NULL," +
         "PRIMARY KEY (currency, date))";
+    private static final String SELECT_LATEST_POINTS = "SELECT currency, spot, date FROM %s WHERE date IN "
+        + "(SELECT MAX(date) FROM exchange_rates GROUP BY currency)";
     private static final String RATES_INSERT_QUERY = "INSERT INTO %s(currency,spot,date) VALUES(?,?,?)" +
         "ON DUPLICATE KEY UPDATE spot = VALUES(spot)";
     //private static final
@@ -79,8 +86,20 @@ public class CurrencyStorageService {
     }
 
     public void saveData(@NotNull HashMap<String, BigDecimal> ratesMap) throws SQLException {
-         String query = String.format(RATES_INSERT_QUERY, TABLE_NAME);
+         String query;
 
+         try(Statement statement = connection.createStatement()) {
+             query = String.format(SELECT_LATEST_POINTS, TABLE_NAME);
+             ResultSet latestRecordsInDB = statement.executeQuery(query);
+             while (latestRecordsInDB.next()) {
+                 filterDuplicateValues(ratesMap, latestRecordsInDB);
+             }
+         } catch (SQLException e) {
+             LOG.error("RDBMS error while retrieving data for comparison: ", e);
+             throw e;
+         }
+
+         query = String.format(RATES_INSERT_QUERY, TABLE_NAME);
          try(PreparedStatement preparedStatement = connection.prepareStatement(query)) {
              Timestamp today = new Timestamp(System.currentTimeMillis());
              for(Map.Entry<String, BigDecimal> entry: ratesMap.entrySet()) {
@@ -89,15 +108,16 @@ public class CurrencyStorageService {
                  preparedStatement.setTimestamp(3, today);
                  preparedStatement.addBatch();
              }
+
              int[] result = preparedStatement.executeBatch();
              LOG.debug(String.format( "INSERT: %s", Arrays.toString(result)));
+
          } catch (SQLException e) {
              LOG.error("RDBMS error when saving data: ", e);
              throw e;
          }
     }
 
-    //  TODO: make this readable
     public HashMap<String,Map<LocalDateTime,Float>> retrieveData(LocalDateTime startDate, LocalDateTime endDate, String currency) throws SQLException {
         String query;
         PreparedStatement preparedStatement;
@@ -112,7 +132,9 @@ public class CurrencyStorageService {
                 preparedStatement = this.prepareStatementHelper(query, startDate, endDate);
                 preparedStatement.setString(3, currency);
             }
+
             resultSet = preparedStatement.executeQuery();
+
         } catch (SQLException e) {
             LOG.error("RDBMS error while retrieving data: ", e);
             throw e;
@@ -121,7 +143,7 @@ public class CurrencyStorageService {
         HashMap<String,Map<LocalDateTime,Float>> result = new HashMap<>();
 
         while (resultSet.next()) {
-            fillResult(resultSet, result);
+            fetchRowFromResultSet(resultSet, result);
         }
 
         return result;
@@ -135,21 +157,49 @@ public class CurrencyStorageService {
             endDate = LocalDateTime.now();
         }
 
-        PreparedStatement preparedStatement = connection.prepareStatement(query);
-        preparedStatement.setTimestamp(1, Timestamp.valueOf(startDate));
-        preparedStatement.setTimestamp(2, Timestamp.valueOf(endDate));
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(query);
+            preparedStatement.setTimestamp(1, Timestamp.valueOf(startDate));
+            preparedStatement.setTimestamp(2, Timestamp.valueOf(endDate));
 
-        return preparedStatement;
+            return preparedStatement;
+        } catch (SQLException e) {
+            LOG.error("Unexpected error while preparing an SQL statement: ",e);
+            throw e;
+        }
     }
 
-    private void fillResult(ResultSet resultSet, HashMap<String,Map<LocalDateTime,Float>> result) throws SQLException {
-        if (!result.containsKey(resultSet.getString("currency"))) {
-            HashMap<LocalDateTime, Float> timeValue = new HashMap<>();
+    private void fetchRowFromResultSet(ResultSet resultSet, HashMap<String,Map<LocalDateTime,Float>> result) throws SQLException {
+        try {
+            if (!result.containsKey(resultSet.getString(CURRENCY))) {
+                HashMap<LocalDateTime, Float> timeValue = new HashMap<>();
 
-            timeValue.put(resultSet.getTimestamp("date").toLocalDateTime(), resultSet.getFloat("spot"));
-            result.put(resultSet.getString("currency"),timeValue);
-        } else {
-            result.get(resultSet.getString("currency")).put(resultSet.getTimestamp("date").toLocalDateTime(), resultSet.getFloat("spot"));
+                timeValue.put(resultSet.getTimestamp(DATE).toLocalDateTime(), resultSet.getFloat(SPOT));
+                result.put(resultSet.getString(CURRENCY),timeValue);
+            } else {
+                result.get(resultSet.getString(CURRENCY)).put(resultSet.getTimestamp(DATE).toLocalDateTime(), resultSet.getFloat(SPOT));
+            }
+        } catch (SQLException e) {
+            LOG.error("Unexpected error while fetching data from the result set: ", e);
+            throw e;
+        }
+    }
+
+    private void filterDuplicateValues(HashMap<String, BigDecimal> ratesMap, ResultSet latestRecords) throws SQLException {
+
+        try {
+            String currency = latestRecords.getString(CURRENCY);
+            BigDecimal oldValue = latestRecords.getBigDecimal(SPOT).stripTrailingZeros();
+            BigDecimal newValue = ratesMap.get(currency); // potentially null
+
+            LOG.debug(String.format("Old: %s, new: %s", oldValue.toString(), newValue.toString()));
+
+            if (oldValue.equals(newValue)) {
+                ratesMap.remove(currency);
+            }
+        } catch (SQLException e) {
+            LOG.error("Unexpected error while fetching data from the result set: ", e);
+            throw e;
         }
     }
 
