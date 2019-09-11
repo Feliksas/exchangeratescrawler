@@ -6,8 +6,8 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="exchange-rates-crawler" />
         <module name="exchangeratescrawler" />
+        <module name="exchange-rates-crawler" />
       </profile>
     </annotationProcessing>
   </component>
