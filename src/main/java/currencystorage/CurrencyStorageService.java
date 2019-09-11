@@ -118,58 +118,47 @@ public class CurrencyStorageService {
          }
     }
 
-    public HashMap<String,Map<LocalDateTime,Float>> retrieveData(LocalDateTime startDate, LocalDateTime endDate, String currency) throws SQLException {
-        String query;
-        PreparedStatement preparedStatement;
-        ResultSet resultSet;
+    public HashMap<String,Map<LocalDateTime,Float>> retrieveData(LocalDateTime startDate, LocalDateTime endDate) throws SQLException {
+        return retrieveData(startDate, endDate, null);
+    }
 
-        try {
-            if (currency == null) {
-                query = String.format(SELECT_WITHOUT_CURRENCY, TABLE_NAME);
-                preparedStatement = this.prepareStatementHelper(query, startDate, endDate);
-            } else {
-                query = String.format(SELECT_WITH_CURRENCY, TABLE_NAME);
-                preparedStatement = this.prepareStatementHelper(query, startDate, endDate);
+    public HashMap<String,Map<LocalDateTime,Float>> retrieveData(LocalDateTime startDate, LocalDateTime endDate, String currency) throws SQLException {
+        if (endDate == null) {
+            endDate = LocalDateTime.now();
+        }
+
+        ResultSet resultSet;
+        String query;
+
+        if (currency == null) {
+            query = String.format(SELECT_WITHOUT_CURRENCY, TABLE_NAME);
+        } else {
+            query = String.format(SELECT_WITH_CURRENCY, TABLE_NAME);
+        }
+
+        try(PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setTimestamp(1, Timestamp.valueOf(startDate));
+            preparedStatement.setTimestamp(2, Timestamp.valueOf(endDate));
+            if (currency != null) {
                 preparedStatement.setString(3, currency);
             }
 
             resultSet = preparedStatement.executeQuery();
 
+            HashMap<String,Map<LocalDateTime,Float>> result = new HashMap<>();
+
+            while (resultSet.next()) {
+                fetchRowFromResultSet(resultSet, result);
+            }
+
+            return result;
         } catch (SQLException e) {
-            LOG.error("RDBMS error while retrieving data: ", e);
-            throw e;
-        }
-
-        HashMap<String,Map<LocalDateTime,Float>> result = new HashMap<>();
-
-        while (resultSet.next()) {
-            fetchRowFromResultSet(resultSet, result);
-        }
-
-        return result;
-
-    }
-
-    private PreparedStatement prepareStatementHelper(String query,
-                                        LocalDateTime startDate,
-                                        LocalDateTime endDate) throws SQLException {
-        if (endDate == null) {
-            endDate = LocalDateTime.now();
-        }
-
-        try {
-            PreparedStatement preparedStatement = connection.prepareStatement(query);
-            preparedStatement.setTimestamp(1, Timestamp.valueOf(startDate));
-            preparedStatement.setTimestamp(2, Timestamp.valueOf(endDate));
-
-            return preparedStatement;
-        } catch (SQLException e) {
-            LOG.error("Unexpected error while preparing an SQL statement: ",e);
+            LOG.error("RDBMS error while retrieving data: ",e);
             throw e;
         }
     }
 
-    private void fetchRowFromResultSet(ResultSet resultSet, HashMap<String,Map<LocalDateTime,Float>> result) throws SQLException {
+    private void fetchRowFromResultSet(@NotNull ResultSet resultSet, @NotNull HashMap<String,Map<LocalDateTime,Float>> result) throws SQLException {
         try {
             if (!result.containsKey(resultSet.getString(CURRENCY))) {
                 HashMap<LocalDateTime, Float> timeValue = new HashMap<>();
@@ -185,7 +174,7 @@ public class CurrencyStorageService {
         }
     }
 
-    private void filterDuplicateValues(HashMap<String, BigDecimal> ratesMap, ResultSet latestRecords) throws SQLException {
+    private void filterDuplicateValues(@NotNull HashMap<String, BigDecimal> ratesMap, @NotNull ResultSet latestRecords) throws SQLException {
 
         try {
             String currency = latestRecords.getString(CURRENCY);

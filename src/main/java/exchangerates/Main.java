@@ -34,8 +34,9 @@ public class Main {
 
         // test retrieve
         LOG.info("Getting info from database...");
+        LocalDateTime now = LocalDateTime.now();
         LocalDateTime today = LocalDate.now().atStartOfDay();
-        HashMap<String, Map<LocalDateTime,Float>> dataFromDB = dbHandle.retrieveData(today, null, null);
+        HashMap<String, Map<LocalDateTime,Float>> dataFromDB = dbHandle.retrieveData(today, now);
 
         Gson gson = new Gson();
         LOG.info(gson.toJson(dataFromDB));

@@ -34,7 +34,8 @@ public class ExchangeRatesService {
 
         for (Element currencyRate: ratesTable.children()) {
             String currency = currencyRate.getElementsByClass(CURRENCY_NAME_CLASS).get(0).getElementsByTag(TAG_A).get(0).text();
-            BigDecimal rate = new BigDecimal(currencyRate.getElementsByClass(CURRENCY_VALUE_CLASS).get(0).getElementsByTag(TAG_A).get(0).text()).stripTrailingZeros();
+            BigDecimal rate;
+            rate = new BigDecimal(currencyRate.getElementsByClass(CURRENCY_VALUE_CLASS).get(0).getElementsByTag(TAG_A).get(0).text()).stripTrailingZeros();
 
             result.put(currency, rate);
         }
