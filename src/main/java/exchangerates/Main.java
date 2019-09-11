@@ -14,6 +14,7 @@ import java.util.Map;
 
 import com.google.gson.Gson;
 
+import com.google.gson.GsonBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -38,7 +39,7 @@ public class Main {
         LocalDateTime today = LocalDate.now().atStartOfDay();
         HashMap<String, Map<LocalDateTime,Float>> dataFromDB = dbHandle.retrieveData(today, now);
 
-        Gson gson = new Gson();
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
         LOG.info(gson.toJson(dataFromDB));
     }
 }
